@@ -15,7 +15,7 @@ HTTP server with graceful shutdown (`example/http_server.go`):
 
 ```
 // New instance with builtin context. Alternative: r, ctx := rutina.WithContext(ctx)
-r := rutina.New()
+r, _ := rutina.New()
 
 srv := &http.Server{Addr: ":8080"}
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -38,17 +38,8 @@ r.Go(func(ctx context.Context) error {
     return srv.Shutdown(ctx)
 })
 
-// OS signals subscriber
-r.Go(func(ctx context.Context) error {
-    sig := make(chan os.Signal, 1)
-    signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-    select {
-    case <-sig:
-        log.Println("TERM or INT signal received")
-    case <-ctx.Done():
-    }
-    return nil
-})
+// OS signals listener
+r.ListenTermSignals()
 
 if err := r.Wait(); err != nil {
     log.Fatal(err)

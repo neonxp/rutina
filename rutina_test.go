@@ -2,10 +2,9 @@ package rutina
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 func TestSuccess(t *testing.T) {

@@ -1,0 +1,4 @@
+github.com/neonxp/rutina v0.0.0-20181204214833-c582001e89c0 h1:AyPAQ9ebiG/k20WXojUg0rIqodaaw1KFYk4QJpHYIm4=
+github.com/neonxp/rutina v0.0.0-20181204214833-c582001e89c0/go.mod h1:QJOHIcMI4Lh4Nyyi0v119KZllW1S5KxJyy/zg5KQXno=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

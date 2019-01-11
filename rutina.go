@@ -2,7 +2,10 @@ package rutina
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 )
 
 //Rutina is routine manager
@@ -42,6 +45,20 @@ func (r *Rutina) Go(doer func(ctx context.Context) error) {
 			})
 		}
 	}()
+}
+
+// OS signals handler
+func (r *Rutina) ListenTermSignals() {
+	r.Go(func(ctx context.Context) error {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+		select {
+		case <-sig:
+			r.cancel()
+		case <-ctx.Done():
+		}
+		return nil
+	})
 }
 
 // Wait all routines and returns first error or nil if all routines completes without errors
