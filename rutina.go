@@ -54,7 +54,6 @@ func (r *Rutina) ListenTermSignals() {
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		select {
 		case <-sig:
-			r.cancel()
 		case <-ctx.Done():
 		}
 		return nil
