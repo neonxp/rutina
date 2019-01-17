@@ -1,13 +1,67 @@
 # rutina
 
-Package Rutina (russian "рутина" - ordinary boring everyday work) works like https://godoc.org/golang.org/x/sync/errgroup with small differences:
+Package Rutina (russian "рутина" - ordinary boring everyday work) is routine orchestrator for your application.
 
-1) propagates context to routines
-2) cancels context when any routine ends with any result (not only when error result)
+It seems like https://godoc.org/golang.org/x/sync/errgroup with some different:
+
+1) propagates context to every routines. So routine can check if context stopped (`ctx.Done()`).
+2) by default cancels context when any routine ends with any result (not only when error result). Can be configured by option `OptionCancelByError`.
+3) already has optional signal handler `ListenOsSignals()`
 
 ## When it need?
 
-Usually, when yout program consists of several routines (i.e.: http server, metrics server and os signals subscriber) and you want to stop all routines when one of them ends (i.e.: by TERM os signal in signal subscriber).
+Usually, when your program consists of several routines (i.e.: http server, metrics server and os signals subscriber) and you want to stop all routines when one of them ends (i.e.: by TERM os signal in signal subscriber).
+
+## Usage
+
+### New instance
+
+`r := rutina.New()`
+
+or with options (see below):
+
+`r := rutina.New(...Option)` or `r.WithOptions(...Option)`
+
+### Start new routine
+
+```
+r.Go(func (ctx context.Context) error {
+    ...do something...
+})
+```
+
+### Wait routines to complete
+
+```
+err := r.Wait()
+```
+
+Here err = first error in any routine
+
+## Options
+
+### Usage options
+
+`r := rutina.New(option1, option2, ...)`
+or
+```
+r := rutina.New()
+r = r.WithOptions(option1, option2, ...) // Returns new instance of Rutina!
+```
+
+### Logger
+
+`rutina.WithLogger(logger log.Logger) Option` or `rutina.WithStdLogger() Option`
+
+### Custom context
+
+`rutina.WithContext(ctx context.Context) Option`
+
+### Cancel only by errors
+
+`rutina.WithCancelByError() Option`
+
+If this option set, rutina doesnt cancel context if routine completed without error.
 
 ## Example
 
@@ -15,7 +69,7 @@ HTTP server with graceful shutdown (`example/http_server.go`):
 
 ```
 // New instance with builtin context. Alternative: r, ctx := rutina.WithContext(ctx)
-r, _ := rutina.New()
+r, _ := rutina.New(rutina.WithStdLogger())
 
 srv := &http.Server{Addr: ":8080"}
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +93,7 @@ r.Go(func(ctx context.Context) error {
 })
 
 // OS signals listener
-r.ListenTermSignals()
+r.ListenOsSignals()
 
 if err := r.Wait(); err != nil {
     log.Fatal(err)

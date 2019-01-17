@@ -4,19 +4,15 @@ package main
 
 import (
 	"context"
+	"github.com/neonxp/rutina"
 	"io"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"github.com/neonxp/rutina"
 )
 
 func main() {
-	// New instance with builtin context. Alternative: r, ctx := rutina.WithContext(ctx)
-	r, _ := rutina.New()
+	// New instance with builtin context. Alternative: r, ctx := rutina.OptionContext(ctx)
+	r, _ := rutina.New(rutina.WithStdLogger())
 
 	srv := &http.Server{Addr: ":8080"}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -40,16 +36,7 @@ func main() {
 	})
 
 	// OS signals subscriber
-	r.Go(func(ctx context.Context) error {
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-		select {
-		case <-sig:
-			log.Println("TERM or INT signal received")
-		case <-ctx.Done():
-		}
-		return nil
-	})
+	r.ListenOsSignals()
 
 	if err := r.Wait(); err != nil {
 		log.Fatal(err)

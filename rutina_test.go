@@ -8,7 +8,10 @@ import (
 )
 
 func TestSuccess(t *testing.T) {
-	r, _ := New()
+	r, _ := New(
+		WithStdLogger(),
+		WithContext(context.Background()),
+	)
 	counter := 0
 	f := func(name string, ttl time.Duration) error {
 		counter++
@@ -37,7 +40,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	r, _ := New()
+	r, _ := New(WithCancelByError())
 	f := func(name string, ttl time.Duration) error {
 		<-time.After(ttl)
 		t.Log(name)
