@@ -4,15 +4,16 @@ package main
 
 import (
 	"context"
-	"github.com/neonxp/rutina"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/neonxp/rutina"
 )
 
 func main() {
 	// New instance with builtin context. Alternative: r, ctx := rutina.OptionContext(ctx)
-	r, _ := rutina.New(rutina.WithStdLogger())
+	r := rutina.New(rutina.WithStdLogger())
 
 	srv := &http.Server{Addr: ":8080"}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

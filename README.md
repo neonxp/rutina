@@ -69,7 +69,7 @@ HTTP server with graceful shutdown (`example/http_server.go`):
 
 ```
 // New instance with builtin context. Alternative: r, ctx := rutina.WithContext(ctx)
-r, _ := rutina.New(rutina.WithStdLogger())
+r := rutina.New(rutina.WithStdLogger())
 
 srv := &http.Server{Addr: ":8080"}
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

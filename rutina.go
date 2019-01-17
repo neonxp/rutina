@@ -22,11 +22,11 @@ type Rutina struct {
 }
 
 // New instance with builtin context
-func New(opts ...Option) (*Rutina, context.Context) {
+func New(opts ...Option) *Rutina {
 	ctx, cancel := context.WithCancel(context.Background())
 	var counter uint64 = 0
 	r := &Rutina{ctx: ctx, Cancel: cancel, counter: &counter, cancelByError: false}
-	return r.WithOptions(opts...), ctx
+	return r.WithOptions(opts...)
 }
 
 func (r *Rutina) WithOptions(opts ...Option) *Rutina {
