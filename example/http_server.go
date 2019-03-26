@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// New instance with builtin context. Alternative: r, ctx := rutina.OptionContext(ctx)
+	// New instance with builtin context
 	r := rutina.New(rutina.WithStdLogger())
 
 	srv := &http.Server{Addr: ":8080"}

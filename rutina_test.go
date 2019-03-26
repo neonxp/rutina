@@ -8,7 +8,7 @@ import (
 )
 
 func TestSuccess(t *testing.T) {
-	r, _ := New(
+	r := New(
 		WithStdLogger(),
 		WithContext(context.Background()),
 	)
@@ -40,7 +40,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	r, _ := New(WithCancelByError())
+	r := New()
 	f := func(name string, ttl time.Duration) error {
 		<-time.After(ttl)
 		t.Log(name)
@@ -65,12 +65,12 @@ func TestError(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
-	r, _ := New()
+	r := New()
 	cc := false
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		return nil
-	})
+	}, ShutdownIfDone)
 	r.Go(func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
@@ -79,7 +79,7 @@ func TestContext(t *testing.T) {
 		case <-time.After(3 * time.Second):
 			return errors.New("Timeout")
 		}
-	})
+	}, ShutdownIfDone)
 	if err := r.Wait(); err != nil {
 		t.Error("Unexpected error", err)
 	}
