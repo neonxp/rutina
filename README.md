@@ -54,26 +54,26 @@ Default policy:
 #### Example of run policies
 
 ```go
-    r.Go(func(ctx context.Context) error {
-		// If this routine produce no error - it just restarts
-		// If it returns error - all other routines will shutdown (because context cancels)
-	}, rutina.RestartIfDone, rutina.ShutdownIfFail)
+r.Go(func(ctx context.Context) error {
+	// If this routine produce no error - it just restarts
+	// If it returns error - all other routines will shutdown (because context cancels)
+}, rutina.RestartIfDone, rutina.ShutdownIfFail)
 
-	r.Go(func(ctx context.Context) error {
-		// If this routine produce no error - it just completes
-		// If it returns error - all other routines will shutdown (because context cancels)
-	}, rutina.DoNothingIfDone, rutina.ShutdownIfFail)
+r.Go(func(ctx context.Context) error {
+	// If this routine produce no error - it just completes
+	// If it returns error - all other routines will shutdown (because context cancels)
+}, rutina.DoNothingIfDone, rutina.ShutdownIfFail)
 
-	r.Go(func(ctx context.Context) error {
-		// If this routine produce no error - all other routines will shutdown (because context cancels)
-		// If it returns error - it will be restarted
-	}, rutina.RestartIfFail)
+r.Go(func(ctx context.Context) error {
+	// If this routine produce no error - all other routines will shutdown (because context cancels)
+	// If it returns error - it will be restarted
+}, rutina.RestartIfFail)
 
-	r.Go(func(ctx context.Context) error {
-		// If this routine stopped by any case - all other routines will shutdown (because context cancels)
-	}, rutina.ShutdownIfDone)
+r.Go(func(ctx context.Context) error {
+	// If this routine stopped by any case - all other routines will shutdown (because context cancels)
+}, rutina.ShutdownIfDone)
 
-	r.ListenOsSignals() // Shutdown all routines by OS signal
+r.ListenOsSignals() // Shutdown all routines by OS signal
 ```
 
 ### Wait routines to complete
