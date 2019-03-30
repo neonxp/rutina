@@ -1,3 +1,3 @@
-module github.com/NeonXP/rutina
+module github.com/neonxp/rutina
 
 go 1.12
