@@ -122,10 +122,13 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 }
 
 // OS signals handler
-func (r *Rutina) ListenOsSignals() {
+func (r *Rutina) ListenOsSignals(signals ...os.Signal) {
+	if len(signals) == 0 {
+		signals = []os.Signal{os.Kill, os.Interrupt}
+	}
 	r.Go(func(ctx context.Context) error {
 		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt, os.Kill)
+		signal.Notify(sig, signals...)
 		select {
 		case s := <-sig:
 			if r.logger != nil {
