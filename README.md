@@ -49,7 +49,9 @@ Available options of run policy:
 
 Default policy:
 
-`ShutdownIfFail` && `DoNothingIfDone` 
+`ShutdownIfFail` && `ShutdownIfDone`
+
+(just like [errgroup](https://godoc.org/golang.org/x/sync/errgroup)) 
 
 #### Example of run policies
 
@@ -100,11 +102,11 @@ r = r.With(mixin1, mixin2, ...) // Returns new instance of Rutina!
 ### Logger
 
 ```go 
-r.With(rutina.WithStdLogger())
+r = r.With(rutina.WithStdLogger())
 ``` 
 or 
 ```go 
-r.With(rutina.WithLogger(logger log.Logger))
+r = r.With(rutina.WithLogger(logger log.Logger))
 ```
 
 Sets standard or custom logger. By default there is no logger.
@@ -112,10 +114,19 @@ Sets standard or custom logger. By default there is no logger.
 ### Custom context
 
 ```go
-r.With(rutina.WithContext(ctx context.Context))
+r = r.With(rutina.WithContext(ctx context.Context))
 ````
 
 Propagates your own context to Rutina. By default it use own context. 
+
+### Errors channel
+
+```go
+errChan := make(chan error)
+r = r.With(rutina.WithErrChan(errChan))
+```
+
+This channel will receive all errors from all routines with any `...Fail` run policy. 
 
 ## Example
 

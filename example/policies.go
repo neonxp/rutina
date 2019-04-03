@@ -14,6 +14,10 @@ func main() {
 	// New instance with builtin context
 	r := rutina.New()
 
+	errsChan := make(chan error, 1)
+
+	r = r.With(rutina.WithErrChan(errsChan))
+
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		log.Println("Do something 1 second without errors and restart")
@@ -24,18 +28,18 @@ func main() {
 		<-time.After(2 * time.Second)
 		log.Println("Do something 2 seconds without errors and do nothing")
 		return nil
-	}, rutina.ShutdownIfFail)
+	}, rutina.DoNothingIfDone, rutina.ShutdownIfFail)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(3 * time.Second)
 		log.Println("Do something 3 seconds with error and restart")
-		return errors.New("Error!")
+		return errors.New("Error #1!")
 	}, rutina.RestartIfFail)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(4 * time.Second)
 		log.Println("Do something 4 seconds with error and do nothing")
-		return errors.New("Error!")
+		return errors.New("Error #2!")
 	}, rutina.DoNothingIfFail)
 
 	r.Go(func(ctx context.Context) error {
@@ -43,6 +47,18 @@ func main() {
 		log.Println("Do something 10 seconds with error and close context")
 		return errors.New("Successfully shutdown at proper place")
 	}, rutina.ShutdownIfFail)
+
+	r.Go(func(ctx context.Context) error {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Println("Shutdown chan listener")
+				return nil
+			case err := <-errsChan:
+				log.Printf("Error in chan: %v", err)
+			}
+		}
+	})
 
 	// OS signals subscriber
 	r.ListenOsSignals()

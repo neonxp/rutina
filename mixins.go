@@ -39,3 +39,15 @@ func WithStdLogger() *MixinLogger {
 func (o MixinLogger) apply(r *Rutina) {
 	r.logger = o.Logger
 }
+
+type MixinErrChan struct {
+	errCh chan error
+}
+
+func WithErrChan(errCh chan error) *MixinErrChan {
+	return &MixinErrChan{errCh: errCh}
+}
+
+func (o MixinErrChan) apply(r *Rutina) {
+	r.errCh = o.errCh
+}
