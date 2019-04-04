@@ -117,17 +117,17 @@ func (r *Rutina) ListenOsSignals(signals ...os.Signal) {
 	if len(signals) == 0 {
 		signals = []os.Signal{syscall.SIGINT, syscall.SIGTERM}
 	}
-	r.Go(func(ctx context.Context) error {
+	go func() {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, signals...)
 		r.log("starting OS signals listener")
 		select {
 		case s := <-sig:
 			r.log("stopping by OS signal (%v)", s)
-		case <-ctx.Done():
+			r.Cancel()
+		case <-r.ctx.Done():
 		}
-		return nil
-	}, ShutdownIfDone, ShutdownIfFail)
+	}()
 }
 
 // Wait all routines and returns first error or nil if all routines completes without errors
