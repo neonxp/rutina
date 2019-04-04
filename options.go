@@ -1,5 +1,6 @@
 package rutina
 
+// Options sets custom run policies
 type Options int
 
 const (

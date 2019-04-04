@@ -30,12 +30,12 @@ func New(mixins ...Mixin) *Rutina {
 	return r.With(mixins...)
 }
 
+// With applies mixins
 func (r *Rutina) With(mixins ...Mixin) *Rutina {
-	nr := *r
 	for _, m := range mixins {
-		m.apply(&nr)
+		m.apply(r)
 	}
-	return &nr
+	return r
 }
 
 // Go routine
@@ -112,7 +112,13 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 	}()
 }
 
-// OS signals handler
+// Errors returns chan for all errors, event if DoNothingIfFail or RestartIfFail set.
+// By default it nil. Use MixinErrChan to turn it on
+func (r *Rutina) Errors() <-chan error {
+	return r.errCh
+}
+
+// ListenOsSignals is simple OS signals handler. By default listen syscall.SIGINT and syscall.SIGTERM
 func (r *Rutina) ListenOsSignals(signals ...os.Signal) {
 	if len(signals) == 0 {
 		signals = []os.Signal{syscall.SIGINT, syscall.SIGTERM}

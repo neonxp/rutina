@@ -5,18 +5,17 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/neonxp/rutina"
 	"log"
 	"time"
+
+	"github.com/neonxp/rutina"
 )
 
 func main() {
 	// New instance with builtin context
 	r := rutina.New()
 
-	errsChan := make(chan error, 1)
-
-	r = r.With(rutina.WithErrChan(errsChan))
+	r = r.With(rutina.WithErrChan())
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
@@ -54,7 +53,7 @@ func main() {
 			case <-ctx.Done():
 				log.Println("Shutdown chan listener")
 				return nil
-			case err := <-errsChan:
+			case err := <-r.Errors():
 				log.Printf("Error in chan: %v", err)
 			}
 		}

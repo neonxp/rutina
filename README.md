@@ -1,5 +1,7 @@
 # rutina
 
+[![GoDoc](https://godoc.org/github.com/neonxp/rutina?status.svg)](https://godoc.org/github.com/neonxp/rutina)
+
 Package Rutina (russian "рутина" - ordinary boring everyday work) is routine orchestrator for your application.
 
 It seems like https://godoc.org/golang.org/x/sync/errgroup with some different:
@@ -86,6 +88,14 @@ err := r.Wait()
 
 Here err = error that shutdowns all routines (may be will be changed at future)
 
+### Get errors channel
+
+```go
+err := <- r.Errors()
+```
+
+Disabled by default. Use `r.With(rutina.WithErrChan())` to turn on.
+
 ## Mixins
 
 ### Usage
@@ -119,14 +129,15 @@ r = r.With(rutina.WithContext(ctx context.Context))
 
 Propagates your own context to Rutina. By default it use own context. 
 
-### Errors channel
+### Enable errors channel
 
 ```go
-errChan := make(chan error)
-r = r.With(rutina.WithErrChan(errChan))
+r = r.With(rutina.WithErrChan())
+...
+err := <- r.Errors()
 ```
 
-This channel will receive all errors from all routines with any `...Fail` run policy. 
+Turn on errors channel
 
 ## Example
 
