@@ -39,7 +39,7 @@ func WithLogger(logger *log.Logger) *MixinLogger {
 
 // WithStdLogger adds standard logger to rutina
 func WithStdLogger() *MixinLogger {
-	return &MixinLogger{Logger: log.New(os.Stdout, "rutina", log.LstdFlags)}
+	return &MixinLogger{Logger: log.New(os.Stdout, "[rutina]", log.LstdFlags)}
 }
 
 func (o MixinLogger) apply(r *Rutina) {

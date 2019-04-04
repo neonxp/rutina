@@ -15,7 +15,7 @@ func main() {
 	// New instance with builtin context
 	r := rutina.New()
 
-	r = r.With(rutina.WithErrChan())
+	r = r.With(rutina.WithErrChan(), rutina.WithStdLogger())
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
