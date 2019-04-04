@@ -25,7 +25,7 @@ type Rutina struct {
 // New instance with builtin context
 func New(mixins ...Mixin) *Rutina {
 	ctx, cancel := context.WithCancel(context.Background())
-	var counter uint64 = 0
+	var counter uint64
 	r := &Rutina{ctx: ctx, Cancel: cancel, counter: &counter, errCh: nil}
 	return r.With(mixins...)
 }
