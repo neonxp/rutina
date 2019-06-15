@@ -96,9 +96,9 @@ err := <- r.Errors()
 
 Disabled by default. Use `r.With(rutina.WithErrChan())` to turn on.
 
-## Events and hooks
+## Lifecycle events
 
-Rutina has own simple lifecycle events system. You can subscribe your hooks on any of this events:
+Rutina has own simple lifecycle events:
 
 * `EventRoutineStart` - Fires when starts new routine
 * `EventRoutineStop` - Fires when routine stopped with any result 
@@ -107,15 +107,6 @@ Rutina has own simple lifecycle events system. You can subscribe your hooks on a
 * `EventAppStop` - Fires when all routines stopped with any result
 * `EventAppComplete` - Fires when all routines stopped with no errors
 * `EventAppFail` - Fires when all routines stopped with error
-
-Example:
-
-```go
-r.RegisterHook(rutina.EventRoutineStart, func(ev rutina.Event, rid int) error {
-	log.Println("Started routine with ID", rid)
-	return nil
-})
-```
 
 ## Mixins
 

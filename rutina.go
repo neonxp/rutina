@@ -12,23 +12,23 @@ import (
 
 //Rutina is routine manager
 type Rutina struct {
-	ctx      context.Context  // State of application (started/stopped)
-	Cancel   func()           // Cancel func that stops all routines
-	wg       sync.WaitGroup   // WaitGroup that wait all routines to complete
-	onceErr  sync.Once        // Flag that prevents overwrite first error that shutdowns all routines
-	onceWait sync.Once        // Flag that prevents wait already waited rutina
-	err      error            // First error that shutdowns all routines
-	logger   *log.Logger      // Optional logger
-	counter  *uint64          // Optional counter that names routines with increment ids for debug purposes at logger
-	errCh    chan error       // Optional channel for errors when RestartIfFail and DoNothingIfFail
-	hooks    map[Event][]Hook // Lifecycle hooks
+	ctx               context.Context   // State of application (started/stopped)
+	Cancel            func()            // Cancel func that stops all routines
+	wg                sync.WaitGroup    // WaitGroup that wait all routines to complete
+	onceErr           sync.Once         // Flag that prevents overwrite first error that shutdowns all routines
+	onceWait          sync.Once         // Flag that prevents wait already waited rutina
+	err               error             // First error that shutdowns all routines
+	logger            *log.Logger       // Optional logger
+	counter           *uint64           // Optional counter that names routines with increment ids for debug purposes at logger
+	errCh             chan error        // Optional channel for errors when RestartIfFail and DoNothingIfFail
+	lifecycleListener LifecycleListener // Optional listener for events
 }
 
 // New instance with builtin context
 func New(mixins ...Mixin) *Rutina {
 	ctx, cancel := context.WithCancel(context.Background())
 	var counter uint64
-	r := &Rutina{ctx: ctx, Cancel: cancel, counter: &counter, errCh: nil, hooks: map[Event][]Hook{}}
+	r := &Rutina{ctx: ctx, Cancel: cancel, counter: &counter, errCh: nil}
 	return r.With(mixins...)
 }
 
@@ -38,10 +38,6 @@ func (r *Rutina) With(mixins ...Mixin) *Rutina {
 		m.apply(r)
 	}
 	return r
-}
-
-func (r *Rutina) RegisterHook(ev Event, hook Hook) {
-	r.hooks[ev] = append(r.hooks[ev], hook)
 }
 
 // Go routine
@@ -77,10 +73,10 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 	go func() {
 		defer r.wg.Done()
 		id := atomic.AddUint64(r.counter, 1)
-		r.fire(EventRoutineStart, int(id))
+		r.lifecycleEvent(EventRoutineStart, int(id))
 		if err := doer(r.ctx); err != nil {
-			r.fire(EventRoutineFail, int(id))
-			r.fire(EventRoutineStop, int(id))
+			r.lifecycleEvent(EventRoutineFail, int(id))
+			r.lifecycleEvent(EventRoutineStop, int(id))
 			// errors history
 			if r.errCh != nil {
 				r.errCh <- err
@@ -98,8 +94,8 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 			}
 			// endregion
 		} else {
-			r.fire(EventRoutineComplete, int(id))
-			r.fire(EventRoutineStop, int(id))
+			r.lifecycleEvent(EventRoutineComplete, int(id))
+			r.lifecycleEvent(EventRoutineStop, int(id))
 			// region routine successfully done
 			switch onDone {
 			case ShutdownIfDone:
@@ -140,11 +136,11 @@ func (r *Rutina) ListenOsSignals(signals ...os.Signal) {
 func (r *Rutina) Wait() error {
 	r.onceWait.Do(func() {
 		r.wg.Wait()
-		r.fire(EventAppStop, 0)
+		r.lifecycleEvent(EventAppStop, 0)
 		if r.err == nil {
-			r.fire(EventAppComplete, 0)
+			r.lifecycleEvent(EventAppComplete, 0)
 		} else {
-			r.fire(EventAppFail, 0)
+			r.lifecycleEvent(EventAppFail, 0)
 		}
 		if r.errCh != nil {
 			close(r.errCh)
@@ -153,16 +149,10 @@ func (r *Rutina) Wait() error {
 	return r.err
 }
 
-func (r *Rutina) fire(ev Event, rid int) {
+func (r *Rutina) lifecycleEvent(ev Event, rid int) {
 	r.log("Event = %s Routine ID = %d", ev.String(), rid)
-	if hooks, ok := r.hooks[ev]; ok == true {
-		for _, h := range hooks {
-			if err := h(ev, r, rid); err != nil {
-				if r.errCh != nil {
-					r.errCh <- err
-				}
-			}
-		}
+	if r.lifecycleListener != nil {
+		r.lifecycleListener(ev, rid)
 	}
 }
 

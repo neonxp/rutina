@@ -58,3 +58,17 @@ func WithErrChan() *MixinErrChan {
 func (o MixinErrChan) apply(r *Rutina) {
 	r.errCh = make(chan error, 1)
 }
+
+type LifecycleListener func(event Event, routineID int)
+
+type LifecycleMixin struct {
+	Listener LifecycleListener
+}
+
+func (l LifecycleMixin) apply(r *Rutina) {
+	r.lifecycleListener = l.Listener
+}
+
+func WithLifecycleListener(listener LifecycleListener) *LifecycleMixin {
+	return &LifecycleMixin{Listener: listener}
+}
