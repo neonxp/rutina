@@ -11,15 +11,15 @@ func _() {
 	_ = x[EventRoutineStart-0]
 	_ = x[EventRoutineStop-1]
 	_ = x[EventRoutineComplete-2]
-	_ = x[EventRoutineFail-3]
+	_ = x[EventRoutineError-3]
 	_ = x[EventAppStop-4]
 	_ = x[EventAppComplete-5]
-	_ = x[EventAppFail-6]
+	_ = x[EventAppError-6]
 }
 
-const _Event_name = "EventRoutineStartEventRoutineStopEventRoutineCompleteEventRoutineFailEventAppStopEventAppCompleteEventAppFail"
+const _Event_name = "EventRoutineStartEventRoutineStopEventRoutineCompleteEventRoutineErrorEventAppStopEventAppCompleteEventAppError"
 
-var _Event_index = [...]uint8{0, 17, 33, 53, 69, 81, 97, 109}
+var _Event_index = [...]uint8{0, 17, 33, 53, 70, 82, 98, 111}
 
 func (i Event) String() string {
 	if i < 0 || i >= Event(len(_Event_index)-1) {

@@ -20,8 +20,9 @@ type Rutina struct {
 	err               error             // First error that shutdowns all routines
 	logger            *log.Logger       // Optional logger
 	counter           *uint64           // Optional counter that names routines with increment ids for debug purposes at logger
-	errCh             chan error        // Optional channel for errors when RestartIfFail and DoNothingIfFail
+	errCh             chan error        // Optional channel for errors when RestartIfError and DoNothingIfError
 	lifecycleListener LifecycleListener // Optional listener for events
+	autoListenSignals []os.Signal       // Optional listening os signals, default disabled
 }
 
 // New instance with builtin context
@@ -37,6 +38,9 @@ func (r *Rutina) With(mixins ...Mixin) *Rutina {
 	for _, m := range mixins {
 		m.apply(r)
 	}
+	if r.autoListenSignals != nil {
+		r.ListenOsSignals(r.autoListenSignals...)
+	}
 	return r
 }
 
@@ -46,15 +50,15 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 	if r.ctx.Err() != nil {
 		return
 	}
-	onFail := ShutdownIfFail
+	onFail := ShutdownIfError
 	for _, o := range opts {
 		switch o {
-		case ShutdownIfFail:
-			onFail = ShutdownIfFail
-		case RestartIfFail:
-			onFail = RestartIfFail
-		case DoNothingIfFail:
-			onFail = DoNothingIfFail
+		case ShutdownIfError:
+			onFail = ShutdownIfError
+		case RestartIfError:
+			onFail = RestartIfError
+		case DoNothingIfError:
+			onFail = DoNothingIfError
 		}
 	}
 	onDone := ShutdownIfDone
@@ -75,7 +79,7 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 		id := atomic.AddUint64(r.counter, 1)
 		r.lifecycleEvent(EventRoutineStart, int(id))
 		if err := doer(r.ctx); err != nil {
-			r.lifecycleEvent(EventRoutineFail, int(id))
+			r.lifecycleEvent(EventRoutineError, int(id))
 			r.lifecycleEvent(EventRoutineStop, int(id))
 			// errors history
 			if r.errCh != nil {
@@ -83,13 +87,13 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 			}
 			// region routine failed
 			switch onFail {
-			case ShutdownIfFail:
+			case ShutdownIfError:
 				// Save error only if shutdown all routines
 				r.onceErr.Do(func() {
 					r.err = err
 				})
 				r.Cancel()
-			case RestartIfFail:
+			case RestartIfError:
 				r.Go(doer, opts...)
 			}
 			// endregion
@@ -108,7 +112,7 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...Options) {
 	}()
 }
 
-// Errors returns chan for all errors, event if DoNothingIfFail or RestartIfFail set.
+// Errors returns chan for all errors, event if DoNothingIfError or RestartIfError set.
 // By default it nil. Use MixinErrChan to turn it on
 func (r *Rutina) Errors() <-chan error {
 	return r.errCh
@@ -140,7 +144,7 @@ func (r *Rutina) Wait() error {
 		if r.err == nil {
 			r.lifecycleEvent(EventAppComplete, 0)
 		} else {
-			r.lifecycleEvent(EventAppFail, 0)
+			r.lifecycleEvent(EventAppError, 0)
 		}
 		if r.errCh != nil {
 			close(r.errCh)

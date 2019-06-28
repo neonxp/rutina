@@ -21,31 +21,31 @@ func main() {
 		<-time.After(1 * time.Second)
 		log.Println("Do something 1 second without errors and restart")
 		return nil
-	}, rutina.RestartIfDone, rutina.ShutdownIfFail)
+	}, rutina.RestartIfDone, rutina.ShutdownIfError)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(2 * time.Second)
 		log.Println("Do something 2 seconds without errors and do nothing")
 		return nil
-	}, rutina.DoNothingIfDone, rutina.ShutdownIfFail)
+	}, rutina.DoNothingIfDone, rutina.ShutdownIfError)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(3 * time.Second)
 		log.Println("Do something 3 seconds with error and restart")
 		return errors.New("Error #1!")
-	}, rutina.RestartIfFail)
+	}, rutina.RestartIfError)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(4 * time.Second)
 		log.Println("Do something 4 seconds with error and do nothing")
 		return errors.New("Error #2!")
-	}, rutina.DoNothingIfFail)
+	}, rutina.DoNothingIfError)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(10 * time.Second)
 		log.Println("Do something 10 seconds with error and close context")
 		return errors.New("Successfully shutdown at proper place")
-	}, rutina.ShutdownIfFail)
+	}, rutina.ShutdownIfError)
 
 	r.Go(func(ctx context.Context) error {
 		for {

@@ -8,10 +8,10 @@ const (
 	EventRoutineStart Event = iota
 	EventRoutineStop
 	EventRoutineComplete
-	EventRoutineFail
+	EventRoutineError
 	EventAppStop
 	EventAppComplete
-	EventAppFail
+	EventAppError
 )
 
 // Hook is function that calls when event fired

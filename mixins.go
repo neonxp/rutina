@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"syscall"
 )
 
 // Mixin interface
@@ -71,4 +72,19 @@ func (l LifecycleMixin) apply(r *Rutina) {
 
 func WithLifecycleListener(listener LifecycleListener) *LifecycleMixin {
 	return &LifecycleMixin{Listener: listener}
+}
+
+type ListenOsSignalsMixin struct {
+	Signals []os.Signal
+}
+
+func (l ListenOsSignalsMixin) apply(r *Rutina) {
+	r.autoListenSignals = l.Signals
+}
+
+func WithListenOsSignals(signals ...os.Signal) *ListenOsSignalsMixin {
+	if len(signals) == 0 {
+		signals = []os.Signal{syscall.SIGINT, syscall.SIGTERM}
+	}
+	return &ListenOsSignalsMixin{Signals: signals}
 }
