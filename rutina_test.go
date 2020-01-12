@@ -8,10 +8,7 @@ import (
 )
 
 func TestSuccess(t *testing.T) {
-	r := New(
-		WithStdLogger(),
-		WithContext(context.Background()),
-	)
+	r := New(nil)
 	counter := 0
 	f := func(name string, ttl time.Duration) error {
 		counter++
@@ -22,13 +19,13 @@ func TestSuccess(t *testing.T) {
 	}
 	r.Go(func(ctx context.Context) error {
 		return f("one", 1*time.Second)
-	})
+	}, nil)
 	r.Go(func(ctx context.Context) error {
 		return f("two", 2*time.Second)
-	})
+	}, nil)
 	r.Go(func(ctx context.Context) error {
 		return f("three", 3*time.Second)
-	})
+	}, nil)
 	if err := r.Wait(); err != nil {
 		t.Error("Unexpected error", err)
 	}
@@ -40,7 +37,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	r := New()
+	r := New(nil)
 	f := func(name string, ttl time.Duration) error {
 		<-time.After(ttl)
 		t.Log(name)
@@ -48,13 +45,13 @@ func TestError(t *testing.T) {
 	}
 	r.Go(func(ctx context.Context) error {
 		return f("one", 1*time.Second)
-	})
+	}, nil)
 	r.Go(func(ctx context.Context) error {
 		return f("two", 2*time.Second)
-	})
+	}, nil)
 	r.Go(func(ctx context.Context) error {
 		return f("three", 3*time.Second)
-	})
+	}, nil)
 	if err := r.Wait(); err != nil {
 		if err.Error() != "error from one" {
 			t.Error("Must be error from first routine")
@@ -65,12 +62,12 @@ func TestError(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
-	r := New()
+	r := New(nil)
 	cc := false
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		return nil
-	}, ShutdownIfDone)
+	}, RunOpt.SetOnDone(Shutdown))
 	r.Go(func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
@@ -79,7 +76,7 @@ func TestContext(t *testing.T) {
 		case <-time.After(3 * time.Second):
 			return errors.New("Timeout")
 		}
-	}, ShutdownIfDone)
+	}, nil)
 	if err := r.Wait(); err != nil {
 		t.Error("Unexpected error", err)
 	}

@@ -13,58 +13,41 @@ import (
 
 func main() {
 	// New instance with builtin context
-	r := rutina.New()
-
-	r = r.With(rutina.WithErrChan(), rutina.WithStdLogger())
+	r := rutina.New(rutina.Opt.SetLogger(log.Printf).SetListenOsSignals(true))
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		log.Println("Do something 1 second without errors and restart")
 		return nil
-	}, rutina.RestartIfDone, rutina.ShutdownIfError)
+	}, nil)
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(2 * time.Second)
 		log.Println("Do something 2 seconds without errors and do nothing")
 		return nil
-	}, rutina.DoNothingIfDone, rutina.ShutdownIfError)
+	}, nil)
 
 	r.Go(func(ctx context.Context) error {
-		<-time.After(3 * time.Second)
-		log.Println("Do something 3 seconds with error and restart")
-		return errors.New("Error #1!")
-	}, rutina.RestartIfError)
-
-	r.Go(func(ctx context.Context) error {
-		<-time.After(4 * time.Second)
-		log.Println("Do something 4 seconds with error and do nothing")
-		return errors.New("Error #2!")
-	}, rutina.DoNothingIfError)
-
-	r.Go(func(ctx context.Context) error {
-		<-time.After(10 * time.Second)
-		log.Println("Do something 10 seconds with error and close context")
-		return errors.New("Successfully shutdown at proper place")
-	}, rutina.ShutdownIfError)
-
-	r.Go(func(ctx context.Context) error {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Println("Shutdown chan listener")
-				return nil
-			case err := <-r.Errors():
-				log.Printf("Error in chan: %v", err)
-			}
+		select {
+		case <-time.After(time.Second):
+			return errors.New("max 10 times")
+		case <-ctx.Done():
+			return nil
 		}
-	})
+	}, rutina.RunOpt.SetOnError(rutina.Restart).SetMaxCount(10))
 
-	// OS signals subscriber
-	r.ListenOsSignals()
+	r.Go(func(ctx context.Context) error {
+		select {
+		case <-time.After(time.Second):
+			return errors.New("max 10 seconds")
+		case <-ctx.Done():
+			return nil
+		}
+	}, rutina.RunOpt.SetOnError(rutina.Restart).SetTimeout(10*time.Second))
 
 	if err := r.Wait(); err != nil {
 		log.Fatal(err)
 	} else {
-		log.Println("Routines stopped but not correct")
+		log.Println("Routines stopped")
 	}
 }

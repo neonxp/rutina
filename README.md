@@ -18,18 +18,22 @@ Usually, when your program consists of several routines (i.e.: http server, metr
 
 ### New instance
 
-```go
-r := rutina.New()
-```
-
-or with optional mixins (see below):
+With default options:
 
 ```go
-r := rutina.New(...Mixins)
+r := rutina.New(nil)
 ```
-or
-```go 
-r.With(...Mixins)
+
+or with custom options:
+
+```go
+r := rutina.New(
+    rutina.Opt.
+        SetParentContext(ctx context.Context).      // Pass parent context to Rutina (otherwise it uses own new context)
+        SetListenOsSignals(listenOsSignals bool).   // Auto listen OS signals and close context on Kill, Term signal
+        SetLogger(l logger).                        // Pass logger for debug, i.e. `log.Printf`
+        SetErrors(errCh chan error)                 // Set errors channel for errors from routines in Restart/DoNothing errors policy
+)
 ```
 
 ### Start new routine
@@ -37,45 +41,46 @@ r.With(...Mixins)
 ```go
 r.Go(func (ctx context.Context) error {
     ...do something...
-}, ...runOptions)
+}, *runOptions)
 ```
 
-Available options of run policy:
+#### Run Options
 
-* `ShutdownIfError` - Shutdown all routines if this routine returns error
-* `RestartIfError` - Restart this routine if this routine returns error
-* `DoNothingIfError` - Do nothing just stop this routine if this routine returns error
-* `ShutdownIfDone` - Shutdown all routines if this routine done without errors
-* `RestartIfDone` - Restart if this routine done without errors
-* `DoNothingIfDone` - Do nothing if this routine done without errors
+```go
+RunOpt.
+    SetOnDone(policy Policy).           // Run policy if returns no error
+    SetOnError(policy Policy).          // Run policy if returns error
+    SetTimeout(timeout time.Duration).  // Timeout to routine (after it context will be closed)
+    SetMaxCount(maxCount int)           // Max tries on Restart policy
+```
 
-Default policy:
+#### Run policies
 
-`ShutdownIfError` && `ShutdownIfDone`
-
-(just like [errgroup](https://godoc.org/golang.org/x/sync/errgroup)) 
+* `DoNothing` - do not affect other routines
+* `Restart` - restart current routine
+* `Shutdown` - shutdown all routines
 
 #### Example of run policies
 
 ```go
 r.Go(func(ctx context.Context) error {
-	// If this routine produce no error - it just restarts
+	// If this routine produce no error - it just completes, other routines not affected
 	// If it returns error - all other routines will shutdown (because context cancels)
-}, rutina.RestartIfDone, rutina.ShutdownIfError)
+}, nil)
 
 r.Go(func(ctx context.Context) error {
-	// If this routine produce no error - it just completes
+	// If this routine produce no error - it restarts
 	// If it returns error - all other routines will shutdown (because context cancels)
-}, rutina.DoNothingIfDone, rutina.ShutdownIfError)
+}, rutina.RunOpt.SetOnDone(rutina.Restart))
 
 r.Go(func(ctx context.Context) error {
 	// If this routine produce no error - all other routines will shutdown (because context cancels)
 	// If it returns error - it will be restarted
-}, rutina.RestartIfError)
+}, rutina.RunOpt.SetOnDone(rutina.Shutdown).SetOnError(rutina.Restart))
 
 r.Go(func(ctx context.Context) error {
 	// If this routine stopped by any case - all other routines will shutdown (because context cancels)
-}, rutina.ShutdownIfDone)
+}, rutina.RunOpt.SetOnDone(rutina.Shutdown))
 
 r.ListenOsSignals() // Shutdown all routines by OS signal
 ```
@@ -88,84 +93,29 @@ err := r.Wait()
 
 Here err = error that shutdowns all routines (may be will be changed at future)
 
+### Kill routines
+
+```go
+id := r.Go(func (ctx context.Context) error { ... })
+...
+r.Kill(id) // Closes individual context for #id routine that must shutdown it
+```
+
+### List of routines
+
+```go
+list := r.Processes() 
+```
+
+Returns ids of working routines
+
 ### Get errors channel
 
 ```go
 err := <- r.Errors()
 ```
 
-Disabled by default. Use `r.With(rutina.WithErrChan())` to turn on.
-
-## Lifecycle events
-
-Rutina has own simple lifecycle events:
-
-* `EventRoutineStart` - Fires when starts new routine
-* `EventRoutineStop` - Fires when routine stopped with any result 
-* `EventRoutineComplete` - Fires when routine stopped without errors
-* `EventRoutineError` - Fires when routine stopped with error
-* `EventAppStop` - Fires when all routines stopped with any result
-* `EventAppComplete` - Fires when all routines stopped with no errors
-* `EventAppError` - Fires when all routines stopped with error
-
-## Mixins
-
-### Usage
-
-```go
-r := rutina.New(mixin1, mixin2, ...)
-```
-or
-```go
-r := rutina.New()
-r = r.With(mixin1, mixin2, ...) // Returns new instance of Rutina!
-```
-
-### Logger
-
-```go 
-r = r.With(rutina.WithStdLogger())
-``` 
-or 
-```go 
-r = r.With(rutina.WithLogger(logger log.Logger))
-```
-
-Sets standard or custom logger. By default there is no logger.
-
-### Custom context
-
-```go
-r = r.With(rutina.WithContext(ctx context.Context))
-````
-
-Propagates your own context to Rutina. By default it use own context. 
-
-### Enable errors channel
-
-```go
-r = r.With(rutina.WithErrChan())
-...
-err := <- r.Errors()
-```
-
-Turn on errors channel
-
-### Lifecycle listener
-
-```go
-r = r.With(rutina.WithLifecycleListener(func (event rutina.Event, rid int) { ... }))
-```
-
-Simple lifecycle listener
-
-### Auto listen OS signals
-
-```go
-r = r.With(rutina.WithListenOsSignals())
-```
-
-Automatically listen OS signals. There is no `r.ListenOsSignals()` needed.
+Disabled by default. Used when passed errors channel to rutina options
 
 ## Example
 
