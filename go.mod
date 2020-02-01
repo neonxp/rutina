@@ -1,1 +1,1 @@
-module github.com/neonxp/rutina.v2
+module github.com/neonxp/rutina
