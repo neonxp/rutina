@@ -1,6 +1,6 @@
 # rutina
 
-[![GoDoc](https://godoc.org/github.com/neonxp/rutina?status.svg)](https://godoc.org/github.com/neonxp/rutina)
+[![Go Reference](https://pkg.go.dev/badge/github.com/neonxp/rutina.svg)](https://pkg.go.dev/github.com/neonxp/rutina)
 
 Package Rutina (russian "рутина" - ordinary boring everyday work) is routine orchestrator for your application.
 
