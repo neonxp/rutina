@@ -22,7 +22,7 @@ type logger func(format string, v ...interface{})
 
 var nopLogger = func(format string, v ...interface{}) {}
 
-//Rutina is routine manager
+// Rutina is routine manager
 type Rutina struct {
 	ctx               context.Context // State of application (started/stopped)
 	Cancel            func()          // Cancel func that stops all routines
@@ -39,19 +39,13 @@ type Rutina struct {
 }
 
 // New instance with builtin context
-func New(opts *Options) *Rutina {
+func New(opts ...Options) *Rutina {
 	if opts == nil {
-		opts = Opt
+		opts = []Options{}
 	}
-	ctx, cancel := context.WithCancel(opts.ParentContext)
+	options := composeOptions(opts)
+	ctx, cancel := context.WithCancel(options.ParentContext)
 	var counter uint64
-	if opts.Logger == nil {
-		opts.Logger = nopLogger
-	}
-	var signals []os.Signal
-	if opts.ListenOsSignals {
-		signals = []os.Signal{os.Kill, os.Interrupt}
-	}
 	return &Rutina{
 		ctx:               ctx,
 		Cancel:            cancel,
@@ -59,20 +53,18 @@ func New(opts *Options) *Rutina {
 		onceErr:           sync.Once{},
 		onceWait:          sync.Once{},
 		err:               nil,
-		logger:            opts.Logger,
+		logger:            options.Logger,
 		counter:           &counter,
-		errCh:             opts.Errors,
-		autoListenSignals: signals,
+		errCh:             options.Errors,
+		autoListenSignals: options.ListenOsSignals,
 		processes:         map[uint64]*process{},
 		mu:                sync.Mutex{},
 	}
 }
 
 // Go routine
-func (r *Rutina) Go(doer func(ctx context.Context) error, opts *RunOptions) uint64 {
-	if opts == nil {
-		opts = RunOpt
-	}
+func (r *Rutina) Go(doer func(ctx context.Context) error, opts ...RunOptions) uint64 {
+	options := composeRunOptions(opts)
 	// Check that context is not canceled yet
 	if r.ctx.Err() != nil {
 		return 0
@@ -83,11 +75,11 @@ func (r *Rutina) Go(doer func(ctx context.Context) error, opts *RunOptions) uint
 	process := process{
 		id:           id,
 		doer:         doer,
-		onDone:       opts.OnDone,
-		onError:      opts.OnError,
-		restartLimit: opts.MaxCount,
+		onDone:       options.OnDone,
+		onError:      options.OnError,
+		restartLimit: options.MaxCount,
 		restartCount: 0,
-		timeout:      opts.Timeout,
+		timeout:      options.Timeout,
 	}
 	r.processes[id] = &process
 	r.mu.Unlock()

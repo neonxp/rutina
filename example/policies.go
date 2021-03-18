@@ -6,26 +6,27 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"time"
 
-	"github.com/neonxp/rutina"
+	"github.com/neonxp/rutina/v3"
 )
 
 func main() {
 	// New instance with builtin context
-	r := rutina.New(rutina.Opt.SetLogger(log.Printf).SetListenOsSignals(true))
+	r := rutina.New(rutina.Logger(log.Printf), rutina.ListenOsSignals(os.Interrupt, os.Kill))
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		log.Println("Do something 1 second without errors and restart")
 		return nil
-	}, nil)
+	})
 
 	r.Go(func(ctx context.Context) error {
 		<-time.After(2 * time.Second)
 		log.Println("Do something 2 seconds without errors and do nothing")
 		return nil
-	}, nil)
+	})
 
 	r.Go(func(ctx context.Context) error {
 		select {
@@ -34,7 +35,7 @@ func main() {
 		case <-ctx.Done():
 			return nil
 		}
-	}, rutina.RunOpt.SetOnError(rutina.Restart).SetMaxCount(10))
+	}, rutina.OnError(rutina.Restart), rutina.MaxCount(10))
 
 	r.Go(func(ctx context.Context) error {
 		select {
@@ -43,7 +44,7 @@ func main() {
 		case <-ctx.Done():
 			return nil
 		}
-	}, rutina.RunOpt.SetOnError(rutina.Restart).SetTimeout(10*time.Second))
+	}, rutina.OnError(rutina.Restart), rutina.SetTimeout(10*time.Second))
 
 	if err := r.Wait(); err != nil {
 		log.Fatal(err)

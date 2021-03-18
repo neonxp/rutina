@@ -2,41 +2,62 @@ package rutina
 
 import (
 	"context"
+	"os"
 	"time"
 )
 
 type Options struct {
 	ParentContext   context.Context
-	ListenOsSignals bool
+	ListenOsSignals []os.Signal
 	Logger          func(format string, v ...interface{})
 	Errors          chan error
 }
 
-func (o *Options) SetParentContext(ctx context.Context) *Options {
-	o.ParentContext = ctx
-	return o
+func ParentContext(ctx context.Context) Options {
+	return Options{
+		ParentContext: ctx,
+	}
 }
 
-func (o *Options) SetListenOsSignals(listenOsSignals bool) *Options {
-	o.ListenOsSignals = listenOsSignals
-	return o
+func ListenOsSignals(signals ...os.Signal) Options {
+	return Options{
+		ListenOsSignals: signals,
+	}
 }
 
-func (o *Options) SetLogger(l logger) *Options {
-	o.Logger = l
-	return o
+func Logger(l logger) Options {
+	return Options{
+		Logger: l,
+	}
 }
 
-func (o *Options) SetErrors(errCh chan error) *Options {
-	o.Errors = errCh
-	return o
+func Errors(errCh chan error) Options {
+	return Options{
+		Errors: errCh,
+	}
 }
 
-var Opt = &Options{
-	ParentContext:   context.Background(),
-	ListenOsSignals: false,
-	Logger:          nil,
-	Errors:          nil,
+func composeOptions(opts []Options) Options {
+	res := Options{
+		ParentContext:   context.Background(),
+		Logger:          nopLogger,
+		ListenOsSignals: []os.Signal{},
+	}
+	for _, o := range opts {
+		if o.ParentContext != nil {
+			res.ParentContext = o.ParentContext
+		}
+		if o.Errors != nil {
+			res.Errors = o.Errors
+		}
+		if o.ListenOsSignals != nil {
+			res.ListenOsSignals = o.ListenOsSignals
+		}
+		if o.Logger != nil {
+			res.Logger = o.Logger
+		}
+	}
+	return res
 }
 
 type Policy int
@@ -54,29 +75,48 @@ type RunOptions struct {
 	MaxCount *int
 }
 
-func (rp *RunOptions) SetOnDone(policy Policy) *RunOptions {
-	rp.OnDone = policy
-	return rp
+func OnDone(policy Policy) RunOptions {
+	return RunOptions{
+		OnDone: policy,
+	}
 }
 
-func (rp *RunOptions) SetOnError(policy Policy) *RunOptions {
-	rp.OnError = policy
-	return rp
+func OnError(policy Policy) RunOptions {
+	return RunOptions{
+		OnError: policy,
+	}
 }
 
-func (rp *RunOptions) SetTimeout(timeout time.Duration) *RunOptions {
-	rp.Timeout = &timeout
-	return rp
+func Timeout(timeout time.Duration) RunOptions {
+	return RunOptions{
+		Timeout: &timeout,
+	}
 }
 
-func (rp *RunOptions) SetMaxCount(maxCount int) *RunOptions {
-	rp.MaxCount = &maxCount
-	return rp
+func MaxCount(maxCount int) RunOptions {
+	return RunOptions{
+		MaxCount: &maxCount,
+	}
 }
 
-var RunOpt = &RunOptions{
-	OnDone:   DoNothing,
-	OnError:  Shutdown,
-	Timeout:  nil,
-	MaxCount: nil,
+func composeRunOptions(opts []RunOptions) RunOptions {
+	res := RunOptions{
+		OnDone:  Shutdown,
+		OnError: Shutdown,
+	}
+	for _, o := range opts {
+		if o.OnDone != res.OnDone {
+			res.OnDone = o.OnDone
+		}
+		if o.OnError != res.OnError {
+			res.OnError = o.OnError
+		}
+		if o.MaxCount != nil {
+			res.MaxCount = o.MaxCount
+		}
+		if o.Timeout != nil {
+			res.Timeout = o.Timeout
+		}
+	}
+	return res
 }

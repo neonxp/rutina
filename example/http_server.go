@@ -7,13 +7,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/neonxp/rutina"
+	"github.com/neonxp/rutina/v3"
 )
 
 func main() {
 	// New instance with builtin context
-	r := rutina.New(rutina.Opt.SetListenOsSignals(true))
+	r := rutina.New(rutina.ListenOsSignals(os.Interrupt, os.Kill))
 
 	srv := &http.Server{Addr: ":8080"}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -27,14 +28,14 @@ func main() {
 		}
 		log.Println("Server stopped")
 		return nil
-	}, rutina.RunOpt.SetOnDone(rutina.Shutdown))
+	})
 
 	// Gracefully stopping server when context canceled
 	r.Go(func(ctx context.Context) error {
 		<-ctx.Done()
 		log.Println("Stopping server...")
 		return srv.Shutdown(ctx)
-	}, nil)
+	})
 
 	if err := r.Wait(); err != nil {
 		log.Fatal(err)
