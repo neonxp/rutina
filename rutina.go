@@ -219,7 +219,7 @@ func (p *process) run(pctx context.Context, errCh chan error, logger logger) err
 					if errCh != nil {
 						errCh <- ErrRunLimit
 					}
-					return nil
+					return ErrRunLimit
 				}
 			}
 			logger("restarting process #%d", p.id)

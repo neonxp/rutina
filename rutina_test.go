@@ -8,7 +8,7 @@ import (
 )
 
 func TestSuccess(t *testing.T) {
-	r := New(nil)
+	r := New()
 	counter := 0
 	f := func(name string, ttl time.Duration) error {
 		counter++
@@ -19,13 +19,13 @@ func TestSuccess(t *testing.T) {
 	}
 	r.Go(func(ctx context.Context) error {
 		return f("one", 1*time.Second)
-	}, nil)
+	})
 	r.Go(func(ctx context.Context) error {
 		return f("two", 2*time.Second)
-	}, nil)
+	})
 	r.Go(func(ctx context.Context) error {
 		return f("three", 3*time.Second)
-	}, nil)
+	})
 	if err := r.Wait(); err != nil {
 		t.Error("Unexpected error", err)
 	}
@@ -37,7 +37,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	r := New(nil)
+	r := New()
 	f := func(name string, ttl time.Duration) error {
 		<-time.After(ttl)
 		t.Log(name)
@@ -45,13 +45,13 @@ func TestError(t *testing.T) {
 	}
 	r.Go(func(ctx context.Context) error {
 		return f("one", 1*time.Second)
-	}, nil)
+	})
 	r.Go(func(ctx context.Context) error {
 		return f("two", 2*time.Second)
-	}, nil)
+	})
 	r.Go(func(ctx context.Context) error {
 		return f("three", 3*time.Second)
-	}, nil)
+	})
 	if err := r.Wait(); err != nil {
 		if err.Error() != "error from one" {
 			t.Error("Must be error from first routine")
@@ -61,13 +61,33 @@ func TestError(t *testing.T) {
 	t.Log("All routines done")
 }
 
+func TestErrorWithRestart(t *testing.T) {
+	maxCount := 2
+
+	r := New()
+	r.Go(func(ctx context.Context) error {
+		return nil
+	})
+	r.Go(func(ctx context.Context) error {
+		return errors.New("error")
+	}, RunOptions{
+		OnError:  Restart,
+		MaxCount: &maxCount,
+	})
+
+	err := r.Wait()
+	if err != ErrRunLimit {
+		t.Error("Must be an error ErrRunLimit from r.Wait since all restarts was executed")
+	}
+}
+
 func TestContext(t *testing.T) {
-	r := New(nil)
+	r := New()
 	cc := false
 	r.Go(func(ctx context.Context) error {
 		<-time.After(1 * time.Second)
 		return nil
-	}, RunOpt.SetOnDone(Shutdown))
+	}, RunOptions{OnDone: Shutdown})
 	r.Go(func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
@@ -76,12 +96,12 @@ func TestContext(t *testing.T) {
 		case <-time.After(3 * time.Second):
 			return errors.New("Timeout")
 		}
-	}, nil)
+	})
 	if err := r.Wait(); err != nil {
 		t.Error("Unexpected error", err)
 	}
 	if cc {
-		t.Log("Second routine succesfuly complete by context done")
+		t.Log("Second routine successfully complete by context done")
 	} else {
 		t.Error("Routine not completed by context")
 	}
